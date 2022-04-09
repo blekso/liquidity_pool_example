@@ -3,60 +3,64 @@ pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IUniswapV2Router {
-    function swapExactTokensForTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external returns (uint256[] memory amounts);
-}
+contract TokenSwap {
+    //create state variables
 
-contract Swap {
-    address private constant UNISWAP_V2_ROUTER =
-        0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-    address private constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    IERC20 public token1;
+    IERC20 public token2;
+    address public owner1;
+    address public owner2;
 
-    IERC20 public gold;
-    IERC20 public silver;
+    //when deploying pass in owner 1 and owner 2
 
-    function depositGold(uint256 amount_) external {
-        gold.transferFrom(msg.sender, address(this), amount_);
+    constructor(
+        address _token1,
+        address _owner1,
+        address _token2,
+        address _owner2
+    ) {
+        token1 = IERC20(_token1);
+        owner1 = _owner1;
+        token2 = IERC20(_token2);
+        owner2 = _owner2;
     }
 
-    function depositSilver(uint256 amount_) external {
-        silver.transferFrom(msg.sender, address(this), amount_);
-    }
+    //this function will allow 2 people to trade 2 tokens as the same time (atomic) and swap them between accounts
+    //Bob holds token 1 and needs to send to alice
+    //Alice holds token 2 and needs to send to Bob
+    //this allows them to swap an amount of both tokens at the same time
 
-    function swap(
-        address _tokenIn,
-        address _tokenOut,
-        uint256 _amountIn,
-        uint256 _amountOutMin,
-        address _to
-    ) external {
-        IERC20(_tokenIn).transferFrom(msg.sender, address(this), _amountIn);
-        IERC20(_tokenIn).approve(UNISWAP_V2_ROUTER, _amountIn);
+    //*** Important ***
+    //this contract needs an allowance to send tokens at token 1 and token 2 that is owned by owner 1 and owner 2
 
-        address[] memory path;
-        if (_tokenIn == WETH || _tokenOut == WETH) {
-            path = new address[](2);
-            path[0] = _tokenIn;
-            path[1] = _tokenOut;
-        } else {
-            path = new address[](3);
-            path[0] = _tokenIn;
-            path[1] = WETH;
-            path[2] = _tokenOut;
-        }
-
-        IUniswapV2Router(UNISWAP_V2_ROUTER).swapExactTokensForTokens(
-            _amountIn,
-            _amountOutMin,
-            path,
-            _to,
-            block.timestamp
+    function swap(uint256 _amount1, uint256 _amount2) public {
+        require(msg.sender == owner1 || msg.sender == owner2, "Not authorized");
+        require(
+            token1.allowance(owner1, address(this)) >= _amount1,
+            "Token 1 allowance too low"
         );
+        require(
+            token2.allowance(owner1, address(this)) >= _amount1,
+            "Token 2 allowance too low"
+        );
+
+        //transfer TokenSwap
+        //token1, owner1, amount 1 -> owner2.  needs to be in same order as function
+        _safeTransferFrom(token1, owner1, owner2, _amount1);
+        //token2, owner2, amount 2 -> owner1.  needs to be in same order as function
+        _safeTransferFrom(token2, owner2, owner1, _amount2);
+    }
+
+    //This is a private function that the function above is going to call
+    //the result of this transaction(bool) is assigned in a variable called sent
+    //then we require the transfer to be successful
+    function _safeTransferFrom(
+        IERC20 token,
+        address sender,
+        address recipient,
+        uint256 amount
+    ) private {
+        bool sent = token.transferFrom(sender, recipient, amount);
+        require(sent, "Token transfer failed");
     }
 }
