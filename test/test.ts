@@ -5,7 +5,6 @@ import {
   Silver__factory,
   LiquidityPool__factory,
 } from "../typechain-types";
-import { BigNumber } from "ethers";
 
 describe("Liquidity pool test", function () {
   let owner: any;
@@ -76,10 +75,8 @@ describe("Liquidity pool test", function () {
       `Pool1 Silver: ${await silver.balanceOf(liquidityPool1.address)}`
     );
 
-    await gold.approve(owner.address, 100);
-    await gold.approve(liquidityPool1.address, 100);
-    await silver.approve(owner.address, 100);
-    await silver.approve(liquidityPool1.address, 100);
+    //hardcoded uint256 amountBIn = (k.div(balanceA.sub(_amountAOut))).sub(balanceB);
+    await silver.approve(liquidityPool1.address, 20);
 
     await liquidityPool1.swap(5, 0);
 
@@ -113,13 +110,12 @@ describe("Liquidity pool test", function () {
       `Pool2 Silver: ${await silver.balanceOf(liquidityPool2.address)}`
     );
 
-    await gold.approve(owner.address, 100);
-    await gold.approve(liquidityPool1.address, 100);
-    await silver.approve(owner.address, 100);
-    await silver.approve(liquidityPool1.address, 100);
+    //hardcoded uint256 amountAIn = (k.div(balanceB.sub(_amountBOut))).sub(balanceA);
+    await gold.approve(liquidityPool1.address, 24);
 
     await liquidityPool1.swap(0, 8);
 
+    console.log("Final results");
     console.log(`Pool1 Gold: ${await gold.balanceOf(liquidityPool1.address)}`);
     console.log(
       `Pool1 Silver: ${await silver.balanceOf(liquidityPool1.address)}`

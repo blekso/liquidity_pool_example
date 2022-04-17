@@ -50,14 +50,6 @@ contract LiquidityPool {
             _amountAOut == 0 || _amountBOut == 0,
             "You can only swap 1 token type at once"
         );
-        require(
-            tokenA.allowance(msg.sender, address(this)) >= _amountAOut,
-            "Token A allowance too low"
-        );
-        require(
-            tokenB.allowance(msg.sender, address(this)) >= _amountBOut,
-            "Token B ballowance too low"
-        );
 
         uint256 balanceA = IERC20(tokenA).balanceOf(address(this));
         uint256 balanceB = IERC20(tokenB).balanceOf(address(this));
@@ -67,6 +59,12 @@ contract LiquidityPool {
                 balanceB
             );
 
+            console.log(amountBIn);
+            require(
+                tokenB.allowance(msg.sender, address(this)) >= amountBIn,
+                "Token B ballowance too low"
+            );
+
             k = (balanceA - _amountAOut) * (balanceB + amountBIn);
 
             IERC20(tokenB).transferFrom(msg.sender, address(this), amountBIn);
@@ -74,6 +72,12 @@ contract LiquidityPool {
         } else {
             uint256 amountAIn = (k.div(balanceB.sub(_amountBOut))).sub(
                 balanceA
+            );
+
+            console.log(amountAIn);
+            require(
+                tokenA.allowance(msg.sender, address(this)) >= amountAIn,
+                "Token A allowance too low"
             );
 
             k = (balanceA - _amountAOut) * (balanceB - _amountBOut);
